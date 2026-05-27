@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 import joblib
 import matplotlib.pyplot as plt
-import koreanize_matplotlib  # 한글 깨짐을 마법처럼 해결해 주는 패키지
+import matplotlib.font_manager as fm
 import time
 import random
+import os
 
 # ---------------- 기본 설정 ----------------
 st.set_page_config(
@@ -13,7 +14,18 @@ st.set_page_config(
     layout="centered"
 )
 
-# 마이너스 기호 깨짐 방지
+# ---------------- [핵심] 저장소에 올린 나눔고딕 폰트 로드 ----------------
+font_path = "NanumGothic.ttf"
+
+if os.path.exists(font_path):
+    # 깃허브에 올린 폰트 파일이 있으면 그걸 사용
+    font_name = fm.FontProperties(fname=font_path).get_name()
+    plt.rcParams['font.family'] = font_name
+else:
+    # 폰트 파일이 없을 때를 대비한 시스템 기본 폰트 백업
+    plt.rcParams['font.family'] = 'sans-serif'
+    plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial']
+
 plt.rcParams['axes.unicode_minus'] = False
 
 # ---------------- 세션 상태 ----------------
@@ -65,7 +77,6 @@ with st.sidebar:
 
     st.divider()
 
-    # 처음으로 버튼은 일반 버튼 인터페이스로 얌전하게 고정 (움직이지 않음)
     if st.button("처음으로", type="primary"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
@@ -159,7 +170,6 @@ if st.session_state.app_step == 2:
     if st.button("인증 확인"):
         st.session_state.captcha_attempts += 1
 
-        # 무조건 1번째는 통과 못하게 튕겨버리는 철저한 시스템 억까
         if st.session_state.captcha_attempts == 1:
             st.error("""
             인증 세션이 만료되었습니다. 보안 패킷 전송 규칙에 의거하여 
@@ -216,7 +226,6 @@ if st.session_state.app_step == 3:
     입력 후 수정사항이 있는 경우 분석 결과가 달라질 수 있습니다.
     """)
 
-    # 분석 요청 버튼만 조밀하게 타겟팅하여 도망치도록 인젝션 (처음으로 버튼은 영향 안 받음)
     st.markdown("""
     <style>
     @keyframes flyAroundTargeted {
@@ -228,7 +237,6 @@ if st.session_state.app_step == 3:
       100% { transform: translate(0px, 0px); }
     }
     
-    /* 본문 메인 영역 내부의 secondary 버튼(분석 요청)만 날아다니게 바인딩 */
     div.element-container button[kind="secondary"] {
       animation: flyAroundTargeted 1.4s infinite alternate ease-in-out;
       position: relative;
@@ -243,10 +251,7 @@ if st.session_state.app_step == 3:
     st.write("")
     st.write("")
 
-    # 분석 요청 버튼 (미친 듯이 춤추는 마우스 디펜스 버튼)
     if st.button("분석 요청", type="secondary"):
-
-        # 12% 확률로 터지는 로그인 만료 가스라이팅
         if random.random() < 0.12:
             st.error("""
             세션 전송 오버플로우가 감지되었습니다. 
@@ -272,7 +277,6 @@ if st.session_state.app_step == 4:
     progress = st.progress(0)
     status = st.empty()
 
-    # 정밀하게 설계된 롤러코스터식 로딩 시나리오 (수치, 가스라이팅 텍스트, 딜레이 시간)
     dance_timeline = [
         (5, "입력 프로파일 가중치 매트릭스 변환 중...", 0.6),
         (18, "메인 클러스터 커널 스택 메모리 로드 중...", 0.7),
@@ -330,7 +334,6 @@ if st.session_state.app_step == 5:
     실제 의료기관의 진단 결과와 차이가 발생할 수 있습니다. 증상이 의심될 경우 전문의와 상담하십시오.
     """)
 
-    # 기존 데이터 군집화 시각화 인프라
     X_original = df_original[['나이', '흡연여부', '음주여부']]
     X_scaled_original = scaler.transform(X_original)
     df_original['cluster'] = model.predict(X_scaled_original)
@@ -343,6 +346,7 @@ if st.session_state.app_step == 5:
         3: colors[3]
     })
 
+    # [✨ 완벽한 한글화] 폰트 파일을 로드하므로 마음 놓고 한글을 사용하셔도 됩니다!
     subhead_text = '폐암 환자 군집 분석 및 새 환자 위치 (흡연여부 vs 음주여부)'
     st.subheader(subhead_text)
 
