@@ -2,8 +2,10 @@ import streamlit as st
 import pandas as pd
 import joblib
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 import time
 import random
+import os
 
 # ---------------- 기본 설정 ----------------
 st.set_page_config(
@@ -12,7 +14,18 @@ st.set_page_config(
     layout="centered"
 )
 
-plt.rcParams['font.family'] = 'Malgun Gothic'
+# ---------------- 폰트 설정 (한글 깨짐 방지) ----------------
+# 프로젝트 폴더에 폰트 파일이 있으면 불러오고, 없으면 OS 기본 폰트 사용
+font_path = "malgun.ttf"  # 나눔고딕 사용 시 "NanumGothic.ttf"로 변경 가능
+
+if os.path.exists(font_path):
+    font_name = fm.FontProperties(fname=font_path).get_name()
+    plt.rcParams['font.family'] = font_name
+elif os.name == 'nt':  # Windows 로컬 환경
+    plt.rcParams['font.family'] = 'Malgun Gothic'
+else:  # Linux, Mac 등
+    plt.rcParams['font.family'] = 'NanumGothic'
+
 plt.rcParams['axes.unicode_minus'] = False
 
 # ---------------- 세션 상태 ----------------
@@ -48,7 +61,7 @@ try:
 
 except:
     st.error("서비스 초기화 중 문제가 발생했습니다.")
-    st.caption("잠시 후 다시 접속해주세요.")
+    st.caption("잠시 후 다시 접속해주세요. (cancer_model.pkl, cancer_scaler.pkl, cancer.csv 파일 확인)")
     st.stop()
 
 # ---------------- 공통 사이드바 (처음으로 버튼 고정) ----------------
@@ -72,7 +85,6 @@ with st.sidebar:
 
 # ---------------- 화면 0: 분석 시작 ----------------
 if st.session_state.app_step == 0:
-
     st.title("🏥 건강검진 결과 사전 분석 서비스")
 
     st.caption("""
@@ -97,7 +109,6 @@ if st.session_state.app_step == 0:
 
 # ---------------- 화면 1: 약관 동의 ----------------
 if st.session_state.app_step == 1:
-
     st.title("서비스 이용 동의")
 
     st.caption("""
@@ -147,7 +158,6 @@ if st.session_state.app_step == 1:
 
 # ---------------- 화면 2: 자동 입력 방지 (캡차 억까) ----------------
 if st.session_state.app_step == 2:
-
     st.title("본인 확인 및 자동입력방지")
 
     st.caption("""
@@ -159,7 +169,6 @@ if st.session_state.app_step == 2:
     code = st.text_input("번호 입력", max_chars=6)
 
     if st.button("인증 확인"):
-
         st.session_state.captcha_attempts += 1
 
         # 무조건 1번째는 통과 못하게 튕겨버리는 철저한 시스템 억까
@@ -184,7 +193,6 @@ if st.session_state.app_step == 2:
 
 # ---------------- 화면 3: 검진 정보 입력 (분석 요청 버튼만 무빙) ----------------
 if st.session_state.app_step == 3:
-
     st.title("검진 정보 입력")
 
     st.caption("""
@@ -203,17 +211,17 @@ if st.session_state.app_step == 3:
 
         input_smokes = st.number_input(
             "흡연 지표",
-            min_value=0,
-            max_value=50,
-            value=5
+            min_value=0.0,
+            max_value=50.0,
+            value=5.0
         )
 
     with col2:
         input_alcohol = st.number_input(
             "음주 지표",
-            min_value=0,
-            max_value=10,
-            value=3
+            min_value=0.0,
+            max_value=10.0,
+            value=3.0
         )
 
     st.warning("""
@@ -269,9 +277,8 @@ if st.session_state.app_step == 3:
 
     st.stop()
 
-# ---------------- 화면 4: 춤추는 지옥의 로딩바 (올라갔다 99% 멈추고 꼬꾸라지는 로직) ----------------
+# ---------------- 화면 4: 춤추는 지옥의 로딩바 ----------------
 if st.session_state.app_step == 4:
-
     st.title("임상 데이터 가속 연산 중")
 
     progress = st.progress(0)
@@ -285,9 +292,9 @@ if st.session_state.app_step == 4:
         (55, "다차원 벡터 공간 내 유클리드 거리 지표 연산 중...", 0.8),
         (78, "통계학적 신뢰 구간 필터 레이어 교차 검증 중...", 0.9),
         (92, "분석 진단 종합 리포트 마크다운 구조화 중...", 1.2),
-        (99, "⚠️ 동기화 홀드: 최종 연산 노드의 서명 패킷 대기 중 (99%에서 고정)...", 3.5), # 99%에서 사용자의 심리를 자극하는 긴 정적
-        (40, "🚨 패킷 거부: 연산 노드 거절 반응 발생. 완충을 위해 알고리즘 롤백 조치 수행 (-59%)...", 2.0), # 무자비한 수치 드롭
-        (15, "🚨 데이터 세그먼트 손실 복구 및 메모리 가비지 컬렉션 가동 중 (-25%)...", 1.8), # 지옥의 바닥 확인
+        (99, "⚠️ 동기화 홀드: 최종 연산 노드의 서명 패킷 대기 중 (99%에서 고정)...", 3.5), 
+        (40, "🚨 패킷 거부: 연산 노드 거절 반응 발생. 완충을 위해 알고리즘 롤백 조치 수행 (-59%)...", 2.0),
+        (15, "🚨 데이터 세그먼트 손실 복구 및 메모리 가비지 컬렉션 가동 중 (-25%)...", 1.8),
         (38, "세션 재연결 성공. 분산 처리 스택 강제 우회 프로토콜 적용 중...", 0.7),
         (64, "커널 분석 가중치 레이어 초고속 재연산 진행 중...", 0.4),
         (89, "무결성 서명 수동 우회 디코딩 완료...", 0.5),
@@ -303,9 +310,8 @@ if st.session_state.app_step == 4:
     st.session_state.app_step = 5
     st.rerun()
 
-# ---------------- 화면 5: 결과 (니가 만들어준 결과화면 정밀 바인딩) ----------------
+# ---------------- 화면 5: 결과 ----------------
 if st.session_state.app_step == 5:
-
     input_age = st.session_state.input_age
     input_smokes = st.session_state.input_smokes
     input_alcohol = st.session_state.input_alcohol
