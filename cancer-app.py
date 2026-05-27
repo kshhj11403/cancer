@@ -2,10 +2,9 @@ import streamlit as st
 import pandas as pd
 import joblib
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
+import koreanize_matplotlib  # 한글 깨짐을 마법처럼 해결해 주는 패키지
 import time
 import random
-import os
 
 # ---------------- 기본 설정 ----------------
 st.set_page_config(
@@ -14,18 +13,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- 폰트 설정 (한글 깨짐 방지) ----------------
-# 프로젝트 폴더에 폰트 파일이 있으면 불러오고, 없으면 OS 기본 폰트 사용
-font_path = "malgun.ttf"  # 나눔고딕 사용 시 "NanumGothic.ttf"로 변경 가능
-
-if os.path.exists(font_path):
-    font_name = fm.FontProperties(fname=font_path).get_name()
-    plt.rcParams['font.family'] = font_name
-elif os.name == 'nt':  # Windows 로컬 환경
-    plt.rcParams['font.family'] = 'Malgun Gothic'
-else:  # Linux, Mac 등
-    plt.rcParams['font.family'] = 'NanumGothic'
-
+# 마이너스 기호 깨짐 방지
 plt.rcParams['axes.unicode_minus'] = False
 
 # ---------------- 세션 상태 ----------------
