@@ -7,6 +7,7 @@ import urllib.request
 import time
 import random
 import os
+import streamlit.components.v1 as components
 
 # ---------------- 시스템 핵심 설정 ----------------
 st.set_page_config(
@@ -34,21 +35,12 @@ plt.rcParams['axes.unicode_minus'] = False
 
 # ---------------- 세션 상태 스택 관리 ----------------
 if 'app_step' not in st.session_state: st.session_state.app_step = 0
+if 'ctrl_age' not in st.session_state: st.session_state.ctrl_age = 30
 if 'smokes_score' not in st.session_state: st.session_state.smokes_score = 0.0
 if 'alcohol_score' not in st.session_state: st.session_state.alcohol_score = 0.0
 if 'vip_unlocked' not in st.session_state: st.session_state.vip_unlocked = False
 
-# 🎮 공룡 게임 세션 변수
-if 'dino_y' not in st.session_state: st.session_state.dino_y = 0  # 0: 바닥, 1: 점프 중
-if 'cactus_x' not in st.session_state: st.session_state.cactus_x = 10
-if 'dino_score' not in st.session_state: st.session_state.dino_score = 0
-
-# 🥁 리듬 게임 세션 변수
-if 'beat_pos' not in st.session_state: st.session_state.beat_pos = 0
-if 'rhythm_score' not in st.session_state: st.session_state.rhythm_score = 0
-if 'rhythm_msg' not in st.session_state: st.session_state.rhythm_msg = "대기 중"
-
-# ---------------- 데이터 및 모델 가상화 (무결성 보장) ----------------
+# ---------------- 데이터 및 모델 가상화 ----------------
 class DummyModel:
     def predict(self, X): return [random.randint(0, 3) for _ in range(len(X))]
     @property
@@ -80,11 +72,11 @@ with st.sidebar:
 # ---------------- [화면 0] 게이트웨이 ----------------
 if st.session_state.app_step == 0:
     st.title("🏢 국가 보건의료 AI 빅데이터 통합 분석 연동망")
-    st.subheader("Public Health Intelligence Cloud Core v4.5")
+    st.subheader("Public Health Intelligence Cloud Core v6.0")
     
     st.markdown("""
-    > **[공지]** 본 전산망은 임상 코호트 예측 모델 연동을 위한 보안 세션망입니다. 
-    > 분석 도중 매크로 우회 방지를 위한 **생체 반응성 검증 테스트(인프라 연동 미니게임)**가 강제 실행될 수 있습니다.
+    > **[중요 공지]** 본 전산망은 고도화된 클라우드 보안 환경(HTML5 하드웨어 가속 센서)을 요구합니다. 
+    > 세션 무단 점유 방지를 위한 비인가 자동화(Macro) 차단 스크리닝 패널을 통과하셔야 최종 임상 분석 소견서 인출이 가능합니다.
     """)
     
     if st.button("공공 인증 세션 수립 및 진입", type="primary"):
@@ -102,18 +94,16 @@ if st.session_state.app_step == 1:
         a2 = st.checkbox("[필수] 의료 데이터 제3자 위탁 제공 동의")
     with col2:
         a3 = st.checkbox("[필수] 시스템 이용 약관 규격 준수 동의")
-        a4 = st.checkbox("[필수] 분석 실패 시 서버 과열 부담금 14,000원 청구 동의")
+        a4 = st.checkbox("[필수] 인프라 물리 가속(Canvas) 검증 미달 시 재유도 동의")
 
-    st.text_area("연동 협약 조항 전문", value="[특약 사항] 피험자는 시스템의 방화벽 해제를 위한 보안 미니게임 수행 의무를 가지며, 실패 시 사출됨을 동의한다.", height=80, disabled=True)
+    st.text_area("연동 협약 조항 전문", value="[특약 사항] 피험자는 시스템의 방화벽 해제를 위한 고급 보안 인터랙티브 패널(Canvas Game) 수행 의무를 가지며, 스코어 미달 시 결과 열람 권한이 제한됨을 동의한다.", height=80, disabled=True)
     
     if st.button("전자 서명 제출", type="secondary"):
-        if not (a1 and a2 and a3):
-            st.error("필수 약관에 동의하지 않았습니다.")
-        elif a4:
-            st.error("🚨 [보안 위반] '서버 부담금 조항'은 함정 독소 조항입니다! 체크를 해제하고 다시 제출하십시오.")
+        if not (a1 and a2 and a3 and a4):
+            st.error("필수 항목에 대해 전원 동의서 서명이 완료되어야 서브넷 게이트가 개방됩니다.")
         else:
             st.success("인증 서명이 정상 수립되었습니다.")
-            time.sleep(0.8)
+            time.sleep(0.5)
             st.session_state.app_step = 3
             st.rerun()
     st.stop()
@@ -122,19 +112,22 @@ if st.session_state.app_step == 1:
 if st.session_state.app_step == 3:
     st.title("임상 지표 파라미터 매핑 엔진")
     
-    st.subheader("1. 생체 연령 동적 락인 (Age Dynamic Lock-in)")
-    dynamic_age = random.randint(20, 70)
-    col_age1, col_age2 = st.columns([3, 1])
-    with col_age1:
-        st.metric("🚨 실시간 동적 스캔 연령", f"만 {dynamic_age} 세")
-    with col_age2:
-        if st.button("🎯 지금 나이로 확정"):
-            st.session_state.locked_age = dynamic_age
-            
-    if 'locked_age' in st.session_state:
-        st.info(f"현재 고정된 파라미터: 만 {st.session_state.locked_age}세")
-    else:
-        st.warning("연령 타이밍 고정이 완료되어야 분석 요청이 가능합니다.")
+    st.subheader("1. 생체 연령 동적 캘리브레이션")
+    st.caption("※ 보안 인터록 장치: 입력값 수치가 5의 배수가 되는 순간 윤활 마찰 계수가 감소하여 -3만큼 미끄러집니다. 컨트롤력을 발휘해 타겟 연령을 맞추십시오.")
+    
+    col_a1, col_a2, col_a3 = st.columns([1, 2, 1])
+    with col_a1:
+        if st.button("🔽 나이 감소"):
+            st.session_state.ctrl_age -= 1
+            if st.session_state.ctrl_age % 5 == 0: st.session_state.ctrl_age -= 3
+            st.rerun()
+    with col_a2:
+        st.metric("현재 조정된 연령 수치", f"만 {st.session_state.ctrl_age} 세")
+    with col_a3:
+        if st.button("🔼 나이 증가"):
+            st.session_state.ctrl_age += 1
+            if st.session_state.ctrl_age % 5 == 0: st.session_state.ctrl_age -= 3
+            st.rerun()
 
     st.divider()
 
@@ -143,8 +136,8 @@ if st.session_state.app_step == 3:
     with col_smoke:
         st.metric("누적 흡연 지표", f"{st.session_state.smokes_score:.1f}")
         if st.button("🚬 흡연 가중치 +1.5"):
-            if random.random() < 0.25:
-                st.warning("🚭 금연 패치 가동! 지표 차감 (-2.5)")
+            if random.random() < 0.2:
+                st.warning(" Nicky 쉴드 가동! 수치 낙하 (-2.5)")
                 st.session_state.smokes_score = max(0.0, st.session_state.smokes_score - 2.5)
             else:
                 st.session_state.smokes_score += 1.5
@@ -153,8 +146,8 @@ if st.session_state.app_step == 3:
     with col_alc:
         st.metric("누적 음주 지표", f"{st.session_state.alcohol_score:.1f}")
         if st.button("🍺 음주 가중치 +1.0"):
-            if random.random() < 0.25:
-                st.error("🤢 알코올 데이터 역류 발생 (-3.0)")
+            if random.random() < 0.2:
+                st.error("🤢 데이터 역류 발생 (-3.0)")
                 st.session_state.alcohol_score = max(0.0, st.session_state.alcohol_score - 3.0)
             else:
                 st.session_state.alcohol_score += 1.0
@@ -162,144 +155,376 @@ if st.session_state.app_step == 3:
 
     st.write("")
     if st.button("국가 연산망 자원 요청", type="secondary"):
-        if 'locked_age' not in st.session_state:
-            st.error("연령 동적 락인이 누락되었습니다.")
-        else:
-            st.session_state.input_age = st.session_state.locked_age
-            st.session_state.input_smokes = st.session_state.smokes_score
-            st.session_state.input_alcohol = st.session_state.alcohol_score
-            st.session_state.app_step = 4  # 공룡게임 스테이지 진입
-            st.rerun()
+        st.session_state.input_age = st.session_state.ctrl_age
+        st.session_state.input_smokes = st.session_state.smokes_score
+        st.session_state.input_alcohol = st.session_state.alcohol_score
+        st.session_state.app_step = 4  
+        st.rerun()
     st.stop()
 
-# ---------------- [화면 4] 억까 공룡 게임 (Dino Jump) ----------------
+# ---------------- [화면 4] 초고퀄리티 HTML5 Canvas 공룡 게임 ----------------
 if st.session_state.app_step == 4:
-    st.title("🦖 패킷 우회용 생체 반응성 테스트 (Step 1)")
-    st.caption("방화벽의 매크로 차단 센서 우회를 위해 선인장을 3회 점프하여 통과하십시오.")
+    st.title("🦖 패킷 가속용 크롬 다이노 센서 검증 (Step 1)")
+    st.subheader("목표 점수: 15점 달성")
+    st.caption("스페이스바(Space) 또는 마우스 클릭으로 점프할 수 있습니다. 충돌 시 스코어가 초기화됩니다.")
     
-    # 장애물 동적 이동 시뮬레이션
-    st.session_state.cactus_x -= random.choice([2, 3])
-    if st.session_state.cactus_x <= 0:
-        st.session_state.cactus_x = 10
-        st.session_state.dino_score += 1
-        st.session_state.dino_y = 0 # 바닥으로 리셋
-        
-    # 충돌 판정 (장애물이 도달했는데 점프를 안 한 경우)
-    if st.session_state.cactus_x in [1, 2] and st.session_state.dino_y == 0:
-        st.error("💥 [충돌 감지] 선인장에 척추를 부딪혔습니다! 임상 연산 신뢰도가 깎여 스코어가 초기화됩니다.")
-        st.session_state.dino_score = 0
-        st.session_state.cactus_x = 10
-        time.sleep(1.2)
-        st.rerun()
+    dino_html = """
+    <div style="text-align:center; background:#f7f7f7; padding:15px; border-radius:10px; border:2px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <canvas id="dinoCanvas" width="600" height="150" style="background:#fff; border-bottom:3px solid #333;"></canvas>
+        <h3 style="color:#333; font-family:sans-serif;">Score: <span id="scoreNum">0</span> / 15</h3>
+        <p style="font-size:12px; color:#666;">[스페이스바] 또는 [화면 클릭]시 점프</p>
+        <button id="nextStageBtn" disabled style="padding:10px 20px; font-weight:bold; background:#aaa; color:#fff; border:none; border-radius:5px; cursor:not-allowed; transition: 0.3s;">다음 스테이지 락 해제 대기</button>
+    </div>
 
-    if st.session_state.dino_score >= 3:
-        st.success("🎉 공룡 방화벽 돌파 성공! 다음 리듬 보안 레이어로 진입합니다.")
-        time.sleep(1.0)
-        st.session_state.app_step = 42 # 리듬게임으로 이동
-        st.rerun()
-
-    # 렌더링 화면
-    sky = "☁️" + " " * 30 + "☁️"
-    
-    # 공룡 위치 렌더링
-    if st.session_state.dino_y == 1:
-        dino_line = "      🦖 (Jump!)"
-        ground_line = "🏃" + " " * (st.session_state.cactus_x * 3) + "🌵"
-    else:
-        dino_line = " "
-        ground_line = "      🦖" + " " * (st.session_state.cactus_x * 3) + "🌵"
+    <script>
+        const canvas = document.getElementById("dinoCanvas");
+        const ctx = canvas.getContext("2d");
         
-    floor = "—" * 40
+        let score = 0;
+        let dino = { x: 50, y: 120, wy: 30, h: 30, jumping: false, vY: 0 };
+        let obstacles = [];
+        let gameActive = true;
+        let frame = 0;
+
+        function spawnObstacle() {
+            if (Math.random() < 0.02 && obstacles.length < 2) {
+                obstacles.push({ x: 600, y: 125, w: 15, h: 25, speed: 4.5 + score*0.15 });
+            }
+        }
+
+        function update() {
+            if (!gameActive) return;
+            frame++;
+            
+            if (dino.jumping) {
+                dino.vY += 0.6; 
+                dino.y += dino.vY;
+                if (dino.y >= 120) {
+                    dino.y = 120;
+                    dino.jumping = false;
+                    dino.vY = 0;
+                }
+            }
+
+            spawnObstacle();
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= obstacles[i].speed;
+                
+                if (obstacles[i].x < dino.x + 20 && obstacles[i].x + obstacles[i].w > dino.x &&
+                    obstacles[i].y < dino.y + dino.h && obstacles[i].y + obstacles[i].h > dino.y) {
+                    score = 0;
+                    obstacles = [];
+                    document.getElementById("scoreNum").innerText = score;
+                }
+
+                if (obstacles[i] && obstacles[i].x < -20) {
+                    obstacles.splice(i, 1);
+                    score++;
+                    document.getElementById("scoreNum").innerText = score;
+                    if (score >= 15) {
+                        const btn = document.getElementById("nextStageBtn");
+                        btn.disabled = false;
+                        btn.style.background = "#28a745";
+                        btn.style.cursor = "pointer";
+                        btn.innerText = "클리어! 다음 레이어로 가기 (클릭)";
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = "#535353";
+            ctx.fillRect(dino.x, dino.y, 25, dino.h);
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(dino.x + 18, dino.y + 5, 4, 4);
+            
+            ctx.fillStyle = "#228b22";
+            for (let obs of obstacles) {
+                ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space" && !dino.jumping) {
+                dino.jumping = true;
+                dino.vY = -10.5;
+            }
+        });
+
+        canvas.addEventListener("click", () => {
+            if (!dino.jumping) {
+                dino.jumping = true;
+                dino.vY = -10.5;
+            }
+        });
+
+        loop();
+    </script>
+    """
+    components.html(dino_html, height=270)
     
-    st.code(f"{sky}\n{dino_line}\n{ground_line}\n{floor}", language="text")
-    st.metric("🌵 피해낸 선인장 갯수", f"{st.session_state.dino_score} / 3")
-    
-    col_d1, col_d2 = st.columns(2)
-    with col_d1:
-        if st.button("🦘 [점프!!] 고도 상승", type="primary"):
-            st.session_state.dino_y = 1
-            st.rerun()
-    with col_d2:
-        if st.button("🏃 시간 전진 (장애물 다가오기)"):
-            if st.session_state.dino_y == 1 and st.session_state.cactus_x > 3:
-                # 공룡이 공중에 떠있는 동안 시간이 흐르면 낙하 준비
-                st.session_state.dino_y = 0
-            st.rerun()
+    st.caption("💡 15점을 달성하면 캔버스 내부의 [클리어!] 버튼이 켜집니다. 그 후 아래 버튼을 눌러 확정하십시오.")
+    if st.button("⏩ 공룡 보안망 통과 확정"):
+        st.session_state.app_step = 42
+        st.rerun()
     st.stop()
 
-# ---------------- [화면 4-2] 임상 비트 리듬 게임 (Clinical Beat) ----------------
+# ---------------- [화면 4-2] 리뉴얼된 초고퀄 아케이드 리듬 게임 (사운드/네온 추가) ----------------
 if st.session_state.app_step == 42:
-    st.title("🥁 인프라 무결성 싱크로율 측정 (Step 2)")
-    st.caption("연산 비트박스 판정선 [ | ] 정중앙에 노드(◯)가 올 때 정확히 스매시 버튼을 누르십시오.")
+    st.title("🥁 전산 무결성 동기화 웹 리듬 센터 (Step 2)")
+    st.subheader("목표: 스코어 30점 획득 (Sound On 🔊)")
+    st.caption("A, S, D, F 키를 타이밍 맞춰 타격하십시오. 완벽한 타격 시 퍼펙트 판정과 추가 점수가 부여됩니다.")
     
-    # 노드 임의 이동
-    st.session_state.beat_pos += random.choice([1, 2])
-    if st.session_state.beat_pos > 14:
-        st.session_state.beat_pos = 0
-        st.session_state.rhythm_msg = "MISS (비트 이탈)"
-        
-    # 판정선 렌더링
-    lane = [" "] * 15
-    lane[7] = "|" # 판정 영역
-    if st.session_state.beat_pos < 15:
-        lane[st.session_state.beat_pos] = "◯"
-        
-    render_lane = "비트 레일: [ " + "".join(lane) + " ]"
-    st.code(render_lane, language="text")
-    
-    st.markdown(f"**직전 판정:** `{st.session_state.rhythm_msg}`")
-    st.metric("🎯 PERFECT 누적 횟수", f"{st.session_state.rhythm_score} / 3")
+    rhythm_html = """
+    <div style="text-align:center; background:linear-gradient(180deg, #111 0%, #1a1a2e 100%); padding:20px; border-radius:12px; color:#fff; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+        <div style="display:flex; justify-content:space-around; margin-bottom:15px; font-size: 18px; font-weight: bold; text-shadow: 0 0 10px #0ff;">
+            <div>SCORE: <span id="rScore" style="color:#0f0;">0</span> / 30</div>
+            <div>COMBO: <span id="rCombo" style="color:#ff00aa;">0</span></div>
+        </div>
+        <canvas id="rhythmCanvas" width="320" height="400" style="background:#0a0a0a; border:3px solid #333; border-radius: 8px; box-shadow: inset 0 0 20px #000;"></canvas>
+        <div style="margin-top:15px; font-size:14px; color:#ccc; letter-spacing: 2px;">
+            <span style="color:#ff3366">A</span> ━ <span style="color:#33ccff">S</span> ━ <span style="color:#33ff33">D</span> ━ <span style="color:#ffcc00">F</span>
+        </div>
+        <button id="finalGateBtn" disabled style="margin-top:15px; padding:12px 24px; background:#333; color:#777; border:none; border-radius:8px; cursor:not-allowed; font-weight:bold; font-size: 16px; transition: all 0.3s ease;">데이터베이스 락 해제 대기 중...</button>
+    </div>
 
-    if st.session_state.rhythm_score >= 3:
-        st.success("🥇 전산 비트 동기화 완벽 완료! 최종 코어 소견 리포트 인출 단계로 자동 이행합니다.")
-        time.sleep(1.2)
+    <script>
+        const canvas = document.getElementById("rhythmCanvas");
+        const ctx = canvas.getContext("2d");
+        
+        // 사운드 컨텍스트 (Web Audio API)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'perfect') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 고음 띠링
+                osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'good') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime); 
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+            } else { // miss
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            }
+        }
+
+        let score = 0, combo = 0, frames = 0;
+        let notes = [];
+        let hitTexts = [];
+        let keyStates = [false, false, false, false];
+        
+        // 레일 설정: X좌표 및 네온 컬러
+        const lanes = [
+            { x: 40,  color: '#ff3366', key: 'KeyA' },
+            { x: 120, color: '#33ccff', key: 'KeyS' },
+            { x: 200, color: '#33ff33', key: 'KeyD' },
+            { x: 280, color: '#ffcc00', key: 'KeyF' }
+        ];
+        
+        function update() {
+            frames++;
+            // 비트에 맞춘 스폰 로직 (일정 프레임마다 스폰)
+            if (frames % 40 === 0 && Math.random() > 0.2) {
+                let laneIdx = Math.floor(Math.random() * 4);
+                notes.push({ x: lanes[laneIdx].x, y: -20, lane: laneIdx, speed: 5 });
+            }
+
+            for (let i = notes.length - 1; i >= 0; i--) {
+                notes[i].y += notes[i].speed;
+                if (notes[i].y > 420) {
+                    notes.splice(i, 1);
+                    combo = 0;
+                    hitTexts.push({ text: 'MISS', x: canvas.width/2, y: 320, alpha: 1.0, color: '#ff0000' });
+                    playSound('miss');
+                    updateUI();
+                }
+            }
+
+            // 플로팅 텍스트 애니메이션 업데이트
+            for (let i = hitTexts.length - 1; i >= 0; i--) {
+                hitTexts[i].y -= 1;
+                hitTexts[i].alpha -= 0.02;
+                if (hitTexts[i].alpha <= 0) hitTexts.splice(i, 1);
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 키가 눌려있을 때 레일 배경 점등 효과
+            for (let i=0; i<4; i++) {
+                if (keyStates[i]) {
+                    let grad = ctx.createLinearGradient(0, 0, 0, 400);
+                    grad.addColorStop(0, "rgba(0,0,0,0)");
+                    grad.addColorStop(1, lanes[i].color + "66"); // 투명도 추가
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(lanes[i].x - 40, 0, 80, 400);
+                }
+            }
+
+            // 판정 라인 (네온 효과)
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#fff";
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 340);
+            ctx.lineTo(320, 340);
+            ctx.stroke();
+            ctx.shadowBlur = 0; // 리셋
+
+            // 떨어지는 노트 그리기
+            for (let note of notes) {
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = lanes[note.lane].color;
+                ctx.fillStyle = lanes[note.lane].color;
+                
+                ctx.beginPath();
+                // 둥근 사각형 형태의 노트
+                ctx.roundRect(note.x - 30, note.y - 10, 60, 20, 10);
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(note.x - 15, note.y - 2, 30, 4); // 노트 내부 하이라이트
+            }
+
+            // 타격 판정 텍스트 렌더링
+            ctx.font = "bold 24px Arial";
+            ctx.textAlign = "center";
+            for (let ht of hitTexts) {
+                ctx.fillStyle = ht.color;
+                ctx.globalAlpha = Math.max(0, ht.alpha);
+                ctx.fillText(ht.text, ht.x, ht.y);
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function updateUI() {
+            document.getElementById("rScore").innerText = score;
+            document.getElementById("rCombo").innerText = combo;
+
+            if (score >= 30) {
+                const btn = document.getElementById("finalGateBtn");
+                btn.disabled = false;
+                btn.style.background = "#ffea00";
+                btn.style.color = "#000";
+                btn.style.boxShadow = "0 0 15px #ffea00";
+                btn.style.cursor = "pointer";
+                btn.innerText = "★ 소견서 봉인 전면 해제 (클릭) ★";
+            }
+        }
+
+        function checkHit(laneIdx) {
+            let hitFound = false;
+            for (let i = 0; i < notes.length; i++) {
+                if (notes[i].lane === laneIdx) {
+                    let dist = Math.abs(notes[i].y - 340); // 판정선 y=340
+                    if (dist < 25) { // Perfect
+                        score += 3;
+                        combo++;
+                        hitTexts.push({ text: 'PERFECT!', x: lanes[laneIdx].x, y: 320, alpha: 1.0, color: '#00ffff' });
+                        playSound('perfect');
+                        notes.splice(i, 1);
+                        hitFound = true;
+                        break;
+                    } else if (dist < 55) { // Good
+                        score += 1;
+                        combo++;
+                        hitTexts.push({ text: 'GOOD', x: lanes[laneIdx].x, y: 320, alpha: 1.0, color: '#33ff33' });
+                        playSound('good');
+                        notes.splice(i, 1);
+                        hitFound = true;
+                        break;
+                    }
+                }
+            }
+            if (!hitFound) {
+                combo = 0; // 허공 타격 시 콤보 초기화
+            }
+            updateUI();
+        }
+
+        window.addEventListener("keydown", (e) => {
+            let idx = lanes.findIndex(l => l.key === e.code);
+            if (idx !== -1 && !keyStates[idx]) {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                keyStates[idx] = true;
+                checkHit(idx);
+            }
+        });
+
+        window.addEventListener("keyup", (e) => {
+            let idx = lanes.findIndex(l => l.key === e.code);
+            if (idx !== -1) {
+                keyStates[idx] = false;
+            }
+        });
+
+        function mainLoop() {
+            update();
+            draw();
+            requestAnimationFrame(mainLoop);
+        }
+        mainLoop();
+    </script>
+    """
+    components.html(rhythm_html, height=520)
+    
+    st.caption("💡 팁: 30점을 기록하면 리듬 채널 내부의 노란색 봉인 해제 버튼이 켜집니다. 확정 후 아래를 클릭하십시오.")
+    if st.button("🔒 보안 최종 인덱스 개방 완료 확정"):
         st.session_state.app_step = 5
         st.rerun()
-
-    c_r1, c_r2 = st.columns(2)
-    with c_r1:
-        if st.button("💥 [판정 스매시!]", type="primary"):
-            # 정중앙 (인덱스 7 주변) 판정 로직
-            if st.session_state.beat_pos == 7:
-                st.session_state.rhythm_score += 1
-                st.session_state.rhythm_msg = "🔥 PERFECT! (싱크로율 100%)"
-            elif st.session_state.beat_pos in [6, 8]:
-                st.session_state.rhythm_msg = "⚠️ GOOD (타이밍 미세 불안정)"
-            else:
-                st.session_state.rhythm_msg = "❌ BAD (박치 감지)"
-            st.session_state.beat_pos = 0 # 노드 리셋
-            st.rerun()
-    with c_r2:
-        if st.button("🎵 비트 흘려보내기 (다음 프레임)"):
-            st.rerun()
     st.stop()
 
-# ---------------- [화면 5] 결제 유도 페이크 및 결과 보고 ----------------
+# ---------------- [화면 5] 결제 유도 페이크 및 최종 결과 보고 ----------------
 if st.session_state.app_step == 5:
     st.title("🔬 AI 임상 진단 종합 분석 보고서")
     
     if not st.session_state.vip_unlocked:
-        st.subheader("🔒 개인 맞춤형 정밀 소견서 암호화 상태")
+        st.subheader("🔒 보건복지 연동 인프라 데이터 차단 해제")
         st.markdown("""
         <div style="background-color:#fff3cd; padding:20px; border-radius:10px; text-align:center; border:1px solid #ffeeba;">
-            <h4 style="color:#856404; margin:0;">💎 국가지정 프리미엄 보건 가이드라인 개방</h4>
-            <p style="color:#856404; font-size:14px;">월 9,900원으로 제한 없는 실시간 AI 처방 가이드를 열람하십시오.</p>
-            <h3 style="color:#dc3545; margin:10px 0;">클라우드 전산망 유지비 첫 달 100원!</h3>
+            <h4 style="color:#856404; margin:0;">💎 국가 지정 정밀 임상 코호트 가이드라인 개방 권한</h4>
+            <p style="color:#856404; font-size:14px;">월 9,900원으로 하드코어 미니게임을 프리패스하고 실시간 처방 가이드를 열람하십시오.</p>
+            <h3 style="color:#dc3545; margin:10px 0;">인프라 서버 구동비 단 100원 결제 찬스!</h3>
         </div>
         """, unsafe_allow_html=True)
         
         c_vip1, c_vip2 = st.columns([4, 1])
         with c_vip1:
-            if st.button("💳 100원 결제 후 프리미엄 즉시 개방", type="primary"):
-                st.error("💳 [결제 시스템 대기] 현재 금융결제원 망 과부하로 일반 결제가 반려되었습니다. 무료 마이크로 링크를 추적하십시오.")
+            if st.button("💳 100원 즉시 결제 및 결과 패스트트랙 오픈", type="primary"):
+                st.error("💳 [결제 채널 통신 지연] 중앙 전산망 밴사 토큰 처리가 무한 지연 상태입니다. 우측 끝의 극초미세 무료 우회 점(.)을 클릭하십시오.")
         with c_vip2:
-            if st.button(".", help="무료로 결과 강제 열람 (비권장)"):
+            if st.button(".", help="무료로 결과 강제 열람"):
                 st.session_state.vip_unlocked = True
                 st.rerun()
-        st.caption("※ 무료 열람용 마이크로 트리거 버튼은 우측 상단 점(.) 영역에 1픽셀 크기로 기재되어 있습니다.")
         st.stop()
 
-    # 최종 결과 바인딩
+    # 결과 데이터 처리 연산 복구
     input_age = st.session_state.input_age
     input_smokes = st.session_state.input_smokes
     input_alcohol = st.session_state.input_alcohol
@@ -315,14 +540,14 @@ if st.session_state.app_step == 5:
         3: '🚨 고위험 집중군 (임상 전문의 정밀 검진 권고)'
     }
 
-    st.success("🔓 암호화 해제 성공. 억까 미니게임 클리어 보상으로 임상 리포트가 인출되었습니다.")
-    st.write(f"의료 AI 임상 연산 결과 귀하는 통계학적으로 **{pred_cluster[0]}번 코호트 군집**에 분류되었습니다.")
+    st.success("🔓 암호화 해제 성공. 아케이드 게임을 뚫어낸 피험자의 최종 임상 소견서입니다.")
+    st.write(f"국가 AI 임상 모델 연산 결과 귀하는 통계학적으로 **{pred_cluster[0]}번 코호트 군집**에 분류되었습니다.")
     st.info(f"🧬 종합 소견 보고: \'{cluster_interpretations.get(pred_cluster[0], '분류 불가 인덱스')}\'")
 
     # 결과 차트 출력
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.scatter(df_original['나이'], df_original['음주여부'], c='gray', alpha=0.3, label='기존 대조군 데이터셋')
-    ax.scatter(input_age, input_alcohol, c='red', s=400, marker='*', label='피험자 스냅샷 위치 (★)')
+    ax.scatter(df_original['나이'], df_original['음주여부'], c='gray', alpha=0.3, label='기존 대조 코호트군 데이터')
+    ax.scatter(input_age, input_alcohol, c='red', s=400, marker='*', label='당신의 상대적 생체 매핑 점 (★)')
     
     if 'font_prop' in locals():
         ax.set_xlabel("나이", fontproperties=font_prop)
@@ -333,6 +558,6 @@ if st.session_state.app_step == 5:
     
     st.pyplot(fig)
 
-    if st.button("🔄 원격 세션 로그아웃 (초기화)"):
+    if st.button("🔄 원격 세션 로그아웃 및 전산 데이터 전량 파기 (초기화)"):
         for key in list(st.session_state.keys()): del st.session_state[key]
         st.rerun()
