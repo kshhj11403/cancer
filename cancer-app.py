@@ -8,14 +8,14 @@ import time
 import random
 import os
 
-# ---------------- 기본 설정 (표면상 아주 진중하게 변경) ----------------
+# ---------------- 시스템 핵심 설정 ----------------
 st.set_page_config(
-    page_title="AI 기반 종합 건강검진 결과 사전 분석 시스템",
-    page_icon="🏥",
+    page_title="국가 지정 AI 보건의료 데이터 통합 분석 연동망",
+    page_icon="🏢",
     layout="centered"
 )
 
-# ---------------- 온라인에서 나눔고딕 폰트 실시간 다운로드 ----------------
+# 나눔고딕 실시간 로드 및 백업 서체 설정
 @st.cache_data
 def load_font():
     font_url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf"
@@ -28,293 +28,278 @@ try:
     font_path = load_font()
     font_prop = fm.FontProperties(fname=font_path)
     plt.rcParams['font.family'] = font_prop.get_name()
-except Exception as e:
+except:
     plt.rcParams['font.family'] = ['Malgun Gothic', 'AppleGothic', 'sans-serif']
-
 plt.rcParams['axes.unicode_minus'] = False
 
-# ---------------- 세션 상태 초기화 ----------------
+# ---------------- 세션 상태 스택 관리 ----------------
 if 'app_step' not in st.session_state: st.session_state.app_step = 0
-if 'captcha_attempts' not in st.session_state: st.session_state.captcha_attempts = 0
-if 'generated_code' not in st.session_state: st.session_state.generated_code = str(random.randint(100000, 999999))
-if 'captcha_time' not in st.session_state: st.session_state.captcha_time = time.time()
 if 'smokes_score' not in st.session_state: st.session_state.smokes_score = 0.0
 if 'alcohol_score' not in st.session_state: st.session_state.alcohol_score = 0.0
-if 'scratched' not in st.session_state: st.session_state.scratched = False
+if 'vip_unlocked' not in st.session_state: st.session_state.vip_unlocked = False
 
-# ---------------- 데이터 로드 ----------------
+# 🎮 공룡 게임 세션 변수
+if 'dino_y' not in st.session_state: st.session_state.dino_y = 0  # 0: 바닥, 1: 점프 중
+if 'cactus_x' not in st.session_state: st.session_state.cactus_x = 10
+if 'dino_score' not in st.session_state: st.session_state.dino_score = 0
+
+# 🥁 리듬 게임 세션 변수
+if 'beat_pos' not in st.session_state: st.session_state.beat_pos = 0
+if 'rhythm_score' not in st.session_state: st.session_state.rhythm_score = 0
+if 'rhythm_msg' not in st.session_state: st.session_state.rhythm_msg = "대기 중"
+
+# ---------------- 데이터 및 모델 가상화 (무결성 보장) ----------------
+class DummyModel:
+    def predict(self, X): return [random.randint(0, 3) for _ in range(len(X))]
+    @property
+    def n_clusters(self): return 4
+    @property
+    def cluster_centers_(self): return [[38, 4, 1], [48, 15, 6], [51, 8, 3], [65, 25, 9]]
+class DummyScaler:
+    def transform(self, X): return X
+    def inverse_transform(self, X): return X
+
 try:
-    # 파일이 없는 환경을 위한 자동 백업용 더미 객체 정의 (Sklearn 에러 방지용)
     if not os.path.exists('cancer.csv'):
-        df_dummy = pd.DataFrame({'Age': [30,40,50,60], 'Smoking': [1,5,10,20], 'Alcohol': [0,2,5,8]})
-        df_dummy.to_csv('cancer.csv', index=False)
-    
-    class DummyModel:
-        def predict(self, X): return [random.randint(0, 3) for _ in range(len(X))]
-        @property
-        def n_clusters(self): return 4
-        @property
-        def cluster_centers_(self): return [[35, 3, 2], [45, 12, 5], [52, 6, 4], [61, 22, 7]]
-        
-    class DummyScaler:
-        def transform(self, X): return X
-        def inverse_transform(self, X): return X
-
-    # 파일이 정상적으로 존재할 때만 로드 시도
+        pd.DataFrame({'A': [30,40,50,60], 'B': [1,5,10,20], 'C': [0,2,5,8]}).to_csv('cancer.csv', index=False)
     model = joblib.load('cancer_model.pkl') if os.path.exists('cancer_model.pkl') else DummyModel()
     scaler = joblib.load('cancer_scaler.pkl') if os.path.exists('cancer_scaler.pkl') else DummyScaler()
     df_original = pd.read_csv('cancer.csv')
+    cols = [c for c in df_original.columns if pd.to_numeric(df_original[c], errors='coerce').notnull().all()]
+    df_original.rename(columns={cols[0]: '나이', cols[1]: '흡연여부', cols[2]: '음주여부'}, inplace=True)
+except:
+    pass
 
-    numeric_cols = [col for col in df_original.columns if pd.to_numeric(df_original[col], errors='coerce').notnull().all()]
-    df_original.rename(columns={numeric_cols[0]: '나이', numeric_cols[1]: '흡연여부', numeric_cols[2]: '음주여부'}, inplace=True)
-except Exception as e:
-    st.error(f"정밀 분석 인프라 연동 중 예외가 발생했습니다: {e}")
-    st.caption("의존성 패키지(scikit-learn 등) 설치 여부를 확인하십시오.")
-    st.stop()
-
-# ---------------- 공통 사이드바 (정상적인 척 압박하기) ----------------
+# ---------------- 사이드바 고정 ----------------
 with st.sidebar:
-    st.caption("데이터 노드 상태")
-    st.error("⚠️ 트래픽 과부하 (인접 세션 대기열 가동 중)")
-    st.caption("현재 분석 예상 소요시간")
-    st.write(f"⏳ 약 {random.randint(45, 120)}분 대기 필요")
-    st.divider()
-    if st.button("처음으로 이동 (입력 데이터는 즉시 유실됨)", type="primary"):
-        for key in list(st.session_state.keys()): del st.session_state[key]
-        st.rerun()
+    st.subheader("🌐 원격 노드 관제")
+    st.info("국가 정보 보건 허브 보안 인증 완료")
+    st.caption("인접 노드 대기 순번")
+    st.markdown(f"**{random.randint(450, 890)}번째 대기 중**")
 
-# ---------------- 화면 0: 분석 시작 ----------------
+# ---------------- [화면 0] 게이트웨이 ----------------
 if st.session_state.app_step == 0:
-    st.title("🏥 AI 기반 종합 건강검진 결과 사전 분석 시스템")
-    st.subheader("임상 통계 예측 모델 고도화 솔루션 v2.4")
-    st.caption("본 정보 시스템은 검진 데이터를 고차원 클러스터링 알고리즘으로 분석하는 보건 예방 참고용 서비스입니다.")
+    st.title("🏢 국가 보건의료 AI 빅데이터 통합 분석 연동망")
+    st.subheader("Public Health Intelligence Cloud Core v4.5")
     
-    confirm = st.checkbox("데이터 분석 목적의 위탁 및 오차 가능성에 대해 명확히 인지하고 동의합니다.")
-    st.write("")
-    if st.button("종합 분석 프로세스 진입", type="secondary"):
-        if confirm:
-            st.session_state.app_step = 1
-            st.rerun()
-        else:
-            st.warning("🚨 안전한 데이터 처리를 위해 상단의 인지 서약 체크박스를 체크하셔야 알고리즘이 가동됩니다.")
-    st.stop()
-
-# ---------------- 화면 1: 약관 동의 (억까 모멘트 1, 2) ----------------
-if st.session_state.app_step == 1:
-    st.title("의료 데이터 처리 및 서비스 이용 동의")
+    st.markdown("""
+    > **[공지]** 본 전산망은 임상 코호트 예측 모델 연동을 위한 보안 세션망입니다. 
+    > 분석 도중 매크로 우회 방지를 위한 **생체 반응성 검증 테스트(인프라 연동 미니게임)**가 강제 실행될 수 있습니다.
+    """)
     
-    agree1 = st.checkbox("[필수] 개인정보 수집 및 이용 동의")
-    agree2 = st.checkbox("[필수] 고유식별정보 및 민감정보 처리 동의")
-    agree3 = st.checkbox("[필수] 분석 인프라 이용약관 동의")
-    # 📌 억까 1: 선택 항목인 것처럼 유저를 기만하는 필수 마케팅 동의
-    agree4 = st.checkbox("[선택] 맞춤형 정밀 건강관리 가이드 및 제휴 보험 상품 안내 동의")
-
-    st.text_area("보안 및 이용약관 전문", value="제1조(목적) 본 시스템은 유클리드 거리를 기반으로 한 통계 분석 모델을 적용합니다. 약관을 완전히 정독해야 하므로 하단의 정독 동의 슬라이더를 100%로 설정하십시오.", height=120, disabled=True)
-    
-    # 📌 억까 2: 스크롤 대신 슬라이더 정독 요구
-    scroll_emulation = st.slider("📜 시스템 약관 정독 인증 (가장 우측인 100까지 정밀하게 드래그하십시오)", 0, 100, 0)
-
-    if st.button("동의 후 다음 단계 진입"):
-        if not (agree1 and agree2 and agree3):
-            st.error("필수 항목에 대해 모두 동의 절차를 밟아주십시오.")
-        elif scroll_emulation < 100:
-            st.error("🚨 [비정상 접근 감지] 시스템이 약관 정독을 신뢰하지 못했습니다. 정독 인증 바를 100% 위치에 정확히 매칭하십시오.")
-        elif not agree4:
-            # 선택 사항이라 써놓고 뒤통수 치기
-            st.error("🚨 [데이터 무결성 오류] [선택] 항목 미동의 시 공공 의료 보건 데이터 커넥션 개방이 거부됩니다. 약관에 동의하십시오.")
-        else:
-            with st.spinner("암호화 토큰 무결성 검증 중..."): time.sleep(1.2)
-            st.session_state.app_step = 2
-            st.session_state.captcha_time = time.time()
-            st.rerun()
-    st.stop()
-
-# ---------------- 화면 2: 자동 입력 방지 (억까 모멘트 3: 시한폭탄 타이머) ----------------
-if st.session_state.app_step == 2:
-    st.title("네트워크 보안 및 자동 입력 방지")
-    
-    # 📌 억까 3: 10초 타임아웃 압박
-    elapsed = int(time.time() - st.session_state.captcha_time)
-    time_left = max(0, 10 - elapsed)
-    
-    if time_left <= 0:
-        st.error("⏰ [세션 만료] 보안 패킷 타임아웃(10초)이 초과되어 암호화 코드가 자동 파기되었습니다. 새 코드가 할당됩니다.")
-        st.session_state.generated_code = str(random.randint(100000, 999999))
-        st.session_state.captcha_time = time.time()
-        time.sleep(1.5)
+    if st.button("공공 인증 세션 수립 및 진입", type="primary"):
+        st.session_state.app_step = 1
         st.rerun()
+    st.stop()
 
-    st.warning(f"🚨 디도스 매크로 방지를 위해 반드시 {time_left}초 이내에 보안 코드를 판독 및 입력해야 합니다.")
-    st.code(st.session_state.generated_code, language="text")
-    code = st.text_input("보안 코드 6자리 입력", max_chars=6)
+# ---------------- [화면 1] 독소 조항 약관 ----------------
+if st.session_state.app_step == 1:
+    st.title("보안 전자 서명 및 동의서 기술 준수")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        a1 = st.checkbox("[필수] 고유인식정보 분산 연산 동의")
+        a2 = st.checkbox("[필수] 의료 데이터 제3자 위탁 제공 동의")
+    with col2:
+        a3 = st.checkbox("[필수] 시스템 이용 약관 규격 준수 동의")
+        a4 = st.checkbox("[필수] 분석 실패 시 서버 과열 부담금 14,000원 청구 동의")
 
-    if st.button("보안인증 확인"):
-        st.session_state.captcha_attempts += 1
-        if st.session_state.captcha_attempts == 1:
-            # 무조건 1회 실패 유도
-            st.error("❌ [통신 동기화 재시도] 첫 번째 인증 세션은 보안 협상(Handshake) 규격에 따라 만료 처리됩니다. 갱신된 하단 코드로 즉시 재시도하십시오.")
-            st.session_state.generated_code = str(random.randint(100000, 999999))
-            st.session_state.captcha_time = time.time()
-            st.rerun()
-        elif code != st.session_state.generated_code:
-            st.error("보안 코드가 일치하지 않습니다. 실시간 타이머는 멈추지 않습니다.")
+    st.text_area("연동 협약 조항 전문", value="[특약 사항] 피험자는 시스템의 방화벽 해제를 위한 보안 미니게임 수행 의무를 가지며, 실패 시 사출됨을 동의한다.", height=80, disabled=True)
+    
+    if st.button("전자 서명 제출", type="secondary"):
+        if not (a1 and a2 and a3):
+            st.error("필수 약관에 동의하지 않았습니다.")
+        elif a4:
+            st.error("🚨 [보안 위반] '서버 부담금 조항'은 함정 독소 조항입니다! 체크를 해제하고 다시 제출하십시오.")
         else:
-            st.success("✅ 패킷 유효성 검증 서버 통과 완료.")
-            time.sleep(1.0)
+            st.success("인증 서명이 정상 수립되었습니다.")
+            time.sleep(0.8)
             st.session_state.app_step = 3
             st.rerun()
-            
-    if st.button("⏱️ 네트워크 클럭 동기화 (남은 시간 새로고침)"): st.rerun()
     st.stop()
 
-# ---------------- 화면 3: 검진 정보 입력 (억까 모멘트 4, 5, 6) ----------------
+# ---------------- [화면 3] 지표 파라미터 매핑 ----------------
 if st.session_state.app_step == 3:
-    st.title("피험자 임상 지표 파라미터 매핑")
+    st.title("임상 지표 파라미터 매핑 엔진")
     
-    # 📌 억까 4: 조작할 때마다 값이 튀는 연령 조정 슬라이더
-    st.subheader("1. 연령(Age) 파라미터 설정")
-    st.caption("※ 보안 매크로 제어를 위해 난수 가변 인코딩 휠이 적용되어 있습니다.")
-    age_seed = st.slider("연령 미세조정 휠 (정교하게 조절하십시오)", 1, 100, 40)
-    # 40% 확률로 유저가 설정한 값과 다른 오차값 강제 주입
-    input_age = age_seed + random.choice([-3, 0, 2]) if random.random() < 0.4 else age_seed
-    st.info(f"🎯 실시간 인덱싱된 보정 연령: 만 {input_age}세")
+    st.subheader("1. 생체 연령 동적 락인 (Age Dynamic Lock-in)")
+    dynamic_age = random.randint(20, 70)
+    col_age1, col_age2 = st.columns([3, 1])
+    with col_age1:
+        st.metric("🚨 실시간 동적 스캔 연령", f"만 {dynamic_age} 세")
+    with col_age2:
+        if st.button("🎯 지금 나이로 확정"):
+            st.session_state.locked_age = dynamic_age
+            
+    if 'locked_age' in st.session_state:
+        st.info(f"현재 고정된 파라미터: 만 {st.session_state.locked_age}세")
+    else:
+        st.warning("연령 타이밍 고정이 완료되어야 분석 요청이 가능합니다.")
 
     st.divider()
 
-    # 📌 억까 5: 광클 유도 지표 빌딩 + 크리티컬 패널티
-    st.subheader("2. 가변형 생활 습관 지표 생성")
-    st.caption("안전 표준 규격에 따라 키보드 직접 입력은 차단되었습니다. 증량 버튼을 연타하여 목표 수치를 누적하십시오.")
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        st.metric("현재 매핑된 흡연 지표", f"{st.session_state.smokes_score:.1f}")
-        if st.button("🚬 흡연 지표 가중치 +1.5 축적"):
-            if random.random() < 0.15:
-                st.error("💥 [시스템 간섭] 니코틴 초기화 필터가 가동되어 지표가 전량 차감되었습니다! (-3.0)")
-                st.session_state.smokes_score = max(0.0, st.session_state.smokes_score - 3.0)
+    st.subheader("2. 가변 축적형 생활 습관 데이터")
+    col_smoke, col_alc = st.columns(2)
+    with col_smoke:
+        st.metric("누적 흡연 지표", f"{st.session_state.smokes_score:.1f}")
+        if st.button("🚬 흡연 가중치 +1.5"):
+            if random.random() < 0.25:
+                st.warning("🚭 금연 패치 가동! 지표 차감 (-2.5)")
+                st.session_state.smokes_score = max(0.0, st.session_state.smokes_score - 2.5)
             else:
                 st.session_state.smokes_score += 1.5
             st.rerun()
             
-    with c2:
-        st.metric("현재 매핑된 음주 지표", f"{st.session_state.alcohol_score:.1f}")
-        if st.button("🍺 음주 지표 가중치 +1.0 축적"):
-            if random.random() < 0.20:
-                st.warning("🤮 [오버플로우] 알코올 데이터 임계치 초과로 지표가 역류했습니다! (-4.0)")
-                st.session_state.alcohol_score = max(0.0, st.session_state.alcohol_score - 4.0)
+    with col_alc:
+        st.metric("누적 음주 지표", f"{st.session_state.alcohol_score:.1f}")
+        if st.button("🍺 음주 가중치 +1.0"):
+            if random.random() < 0.25:
+                st.error("🤢 알코올 데이터 역류 발생 (-3.0)")
+                st.session_state.alcohol_score = max(0.0, st.session_state.alcohol_score - 3.0)
             else:
                 st.session_state.alcohol_score += 1.0
             st.rerun()
 
-    if st.button("데이터 영점(0.0) 초기화 캘리브레이션 실행"):
-        st.session_state.smokes_score = 0.0
-        st.session_state.alcohol_score = 0.0
-        st.rerun()
-
-    # 도망치는 마우스 CSS 애니메이션
-    st.markdown("""
-    <style>
-    @keyframes flyAroundTargeted {
-      0% { transform: translate(0px, 0px); }
-      25% { transform: translate(130px, -30px); }
-      50% { transform: translate(-110px, 40px); }
-      75% { transform: translate(110px, 20px); }
-      100% { transform: translate(0px, 0px); }
-    }
-    div.element-container button[kind="secondary"] {
-      animation: flyAroundTargeted 1.1s infinite alternate ease-in-out;
-      position: relative; z-index: 999; cursor: crosshair;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
     st.write("")
-    if st.button("분석 요청", type="secondary"):
-        # 📌 억까 6: 뜬금없이 나타나는 전문적인 블루스크린 커널 에러
-        if random.random() < 0.15:
-            st.code("""
-            A problem has been detected and Kernel system has been shut down to prevent damage
-            to your core_analysis_matrix.
-            
-            UNEXPECTED_HEALTH_DATA_SPOOFING_ERROR
-            
-            Technical Information:
-            *** STOP: 0x000000D1 (0x0000000C, 0x00000002, 0x00000000, 0xF73120AE)
-            """, language="text")
-            st.error("🚨 [치명적 커널 에러] 데이터 스트림 오버플로우가 발생하여 보안 프로토콜에 의해 세션이 0단계로 초기 사출됩니다.")
-            time.sleep(3.5)
-            st.session_state.app_step = 0
+    if st.button("국가 연산망 자원 요청", type="secondary"):
+        if 'locked_age' not in st.session_state:
+            st.error("연령 동적 락인이 누락되었습니다.")
+        else:
+            st.session_state.input_age = st.session_state.locked_age
+            st.session_state.input_smokes = st.session_state.smokes_score
+            st.session_state.input_alcohol = st.session_state.alcohol_score
+            st.session_state.app_step = 4  # 공룡게임 스테이지 진입
             st.rerun()
-            
-        st.session_state.input_age = input_age
-        st.session_state.input_smokes = st.session_state.smokes_score
-        st.session_state.input_alcohol = st.session_state.alcohol_score
-        st.session_state.app_step = 4
-        st.rerun()
     st.stop()
 
-# ---------------- 화면 4: 지옥의 로딩바 + 팝업 대처 (억까 모멘트 7) ----------------
+# ---------------- [화면 4] 억까 공룡 게임 (Dino Jump) ----------------
 if st.session_state.app_step == 4:
-    st.title("고차원 커널 분산 가속 연산 중")
+    st.title("🦖 패킷 우회용 생체 반응성 테스트 (Step 1)")
+    st.caption("방화벽의 매크로 차단 센서 우회를 위해 선인장을 3회 점프하여 통과하십시오.")
     
-    # 📌 억까 7: 게이지가 99% 멈추고 강제로 미니게임 팝업창 띄우기
-    progress = st.progress(0)
-    status = st.empty()
-    
-    dance_timeline = [
-        (12, "가중치 매트릭스 다차원 변환 중...", 0.5),
-        (51, "커널 스택 분산 메모리 로드 중...", 0.5),
-        (99, "⚠️ 동기화 대기: 연산 최종 노드의 서명 패킷 검증 대기 중 (99%에서 홀딩)...", 2.0)
-    ]
-    
-    for val, txt, delay in dance_timeline:
-        status.text(txt)
-        progress.progress(val)
-        time.sleep(delay)
+    # 장애물 동적 이동 시뮬레이션
+    st.session_state.cactus_x -= random.choice([2, 3])
+    if st.session_state.cactus_x <= 0:
+        st.session_state.cactus_x = 10
+        st.session_state.dino_score += 1
+        st.session_state.dino_y = 0 # 바닥으로 리셋
         
-    st.error("📢 [데이터 무결성 검증] 중앙 연산 장치 점유 비용 확보를 위해 아래의 '비인가 매크로 방지 우회 노드'를 3초 내로 승인하십시오!")
-    col_btn1, col_btn2 = st.columns(2)
-    with col_btn1:
-        click_pass = st.button("🤖 본인은 휴먼(Human) 개체임을 최종 승인합니다.")
-    with col_btn2:
-        st.button("🤖 본인은 지각 능력이 있는 AI 에이전트입니다.")
-        
-    time.sleep(2.5) 
-    
-    if not click_pass:
-        # 반응 못하면 대폭 롤백 패널티
-        st.error("❌ [승인 지연 패널티] 인간 개체 증명 반응 속도 지연으로 연산 코어 패킷이 난도질당했습니다. 롤백을 수행합니다.")
-        progress.progress(15)
-        status.text("🚨 세그먼트 손실 복구 및 메모리 가비지 컬렉션 재가동 진행 중 (-84%)...")
-        time.sleep(2.0)
-        
-    status.text("✅ 보안 우회 터널링이 가동되어 연산 결과를 정상 복구 및 인출했습니다.")
-    progress.progress(100)
-    time.sleep(1.0)
-    
-    st.session_state.app_step = 5
-    st.rerun()
+    # 충돌 판정 (장애물이 도달했는데 점프를 안 한 경우)
+    if st.session_state.cactus_x in [1, 2] and st.session_state.dino_y == 0:
+        st.error("💥 [충돌 감지] 선인장에 척추를 부딪혔습니다! 임상 연산 신뢰도가 깎여 스코어가 초기화됩니다.")
+        st.session_state.dino_score = 0
+        st.session_state.cactus_x = 10
+        time.sleep(1.2)
+        st.rerun()
 
-# ---------------- 화면 5: 결과 및 모자이크 스크래치 (억까 모멘트 8) ----------------
+    if st.session_state.dino_score >= 3:
+        st.success("🎉 공룡 방화벽 돌파 성공! 다음 리듬 보안 레이어로 진입합니다.")
+        time.sleep(1.0)
+        st.session_state.app_step = 42 # 리듬게임으로 이동
+        st.rerun()
+
+    # 렌더링 화면
+    sky = "☁️" + " " * 30 + "☁️"
+    
+    # 공룡 위치 렌더링
+    if st.session_state.dino_y == 1:
+        dino_line = "      🦖 (Jump!)"
+        ground_line = "🏃" + " " * (st.session_state.cactus_x * 3) + "🌵"
+    else:
+        dino_line = " "
+        ground_line = "      🦖" + " " * (st.session_state.cactus_x * 3) + "🌵"
+        
+    floor = "—" * 40
+    
+    st.code(f"{sky}\n{dino_line}\n{ground_line}\n{floor}", language="text")
+    st.metric("🌵 피해낸 선인장 갯수", f"{st.session_state.dino_score} / 3")
+    
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
+        if st.button("🦘 [점프!!] 고도 상승", type="primary"):
+            st.session_state.dino_y = 1
+            st.rerun()
+    with col_d2:
+        if st.button("🏃 시간 전진 (장애물 다가오기)"):
+            if st.session_state.dino_y == 1 and st.session_state.cactus_x > 3:
+                # 공룡이 공중에 떠있는 동안 시간이 흐르면 낙하 준비
+                st.session_state.dino_y = 0
+            st.rerun()
+    st.stop()
+
+# ---------------- [화면 4-2] 임상 비트 리듬 게임 (Clinical Beat) ----------------
+if st.session_state.app_step == 42:
+    st.title("🥁 인프라 무결성 싱크로율 측정 (Step 2)")
+    st.caption("연산 비트박스 판정선 [ | ] 정중앙에 노드(◯)가 올 때 정확히 스매시 버튼을 누르십시오.")
+    
+    # 노드 임의 이동
+    st.session_state.beat_pos += random.choice([1, 2])
+    if st.session_state.beat_pos > 14:
+        st.session_state.beat_pos = 0
+        st.session_state.rhythm_msg = "MISS (비트 이탈)"
+        
+    # 판정선 렌더링
+    lane = [" "] * 15
+    lane[7] = "|" # 판정 영역
+    if st.session_state.beat_pos < 15:
+        lane[st.session_state.beat_pos] = "◯"
+        
+    render_lane = "비트 레일: [ " + "".join(lane) + " ]"
+    st.code(render_lane, language="text")
+    
+    st.markdown(f"**직전 판정:** `{st.session_state.rhythm_msg}`")
+    st.metric("🎯 PERFECT 누적 횟수", f"{st.session_state.rhythm_score} / 3")
+
+    if st.session_state.rhythm_score >= 3:
+        st.success("🥇 전산 비트 동기화 완벽 완료! 최종 코어 소견 리포트 인출 단계로 자동 이행합니다.")
+        time.sleep(1.2)
+        st.session_state.app_step = 5
+        st.rerun()
+
+    c_r1, c_r2 = st.columns(2)
+    with c_r1:
+        if st.button("💥 [판정 스매시!]", type="primary"):
+            # 정중앙 (인덱스 7 주변) 판정 로직
+            if st.session_state.beat_pos == 7:
+                st.session_state.rhythm_score += 1
+                st.session_state.rhythm_msg = "🔥 PERFECT! (싱크로율 100%)"
+            elif st.session_state.beat_pos in [6, 8]:
+                st.session_state.rhythm_msg = "⚠️ GOOD (타이밍 미세 불안정)"
+            else:
+                st.session_state.rhythm_msg = "❌ BAD (박치 감지)"
+            st.session_state.beat_pos = 0 # 노드 리셋
+            st.rerun()
+    with c_r2:
+        if st.button("🎵 비트 흘려보내기 (다음 프레임)"):
+            st.rerun()
+    st.stop()
+
+# ---------------- [화면 5] 결제 유도 페이크 및 결과 보고 ----------------
 if st.session_state.app_step == 5:
-    st.title("AI 임상 진단 통계 결과 보고서")
+    st.title("🔬 AI 임상 진단 종합 분석 보고서")
     
-    # 📌 억까 8: 드디어 끝났는데 결과를 복권 긁듯이 긁어야 오픈해 줌
-    if not st.session_state.scratched:
-        st.subheader("🔒 데이터 보안 암호화 봉인 해제 필요")
-        st.warning("개인정보 보호 표준(ISO 27001)에 의거하여, 아래의 '데이터 시각화 스크래치' 슬라이더를 77% 또는 100%에 정확히 도킹하여 마스킹을 해제하십시오.")
-        scratch_card = st.slider("▒▒▒▒ 데이터 마스킹 스크래치 액션 ▒▒▒▒", 0, 100, 0)
+    if not st.session_state.vip_unlocked:
+        st.subheader("🔒 개인 맞춤형 정밀 소견서 암호화 상태")
+        st.markdown("""
+        <div style="background-color:#fff3cd; padding:20px; border-radius:10px; text-align:center; border:1px solid #ffeeba;">
+            <h4 style="color:#856404; margin:0;">💎 국가지정 프리미엄 보건 가이드라인 개방</h4>
+            <p style="color:#856404; font-size:14px;">월 9,900원으로 제한 없는 실시간 AI 처방 가이드를 열람하십시오.</p>
+            <h3 style="color:#dc3545; margin:10px 0;">클라우드 전산망 유지비 첫 달 100원!</h3>
+        </div>
+        """, unsafe_allow_html=True)
         
-        if scratch_card in [77, 100]:
-            st.success("🔓 암호화 해제 알고리즘 디코딩 완료. 데이터 가독화가 활성화되었습니다.")
-            if st.button("최종 리포트 열람 확인"):
-                st.session_state.scratched = True
+        c_vip1, c_vip2 = st.columns([4, 1])
+        with c_vip1:
+            if st.button("💳 100원 결제 후 프리미엄 즉시 개방", type="primary"):
+                st.error("💳 [결제 시스템 대기] 현재 금융결제원 망 과부하로 일반 결제가 반려되었습니다. 무료 마이크로 링크를 추적하십시오.")
+        with c_vip2:
+            if st.button(".", help="무료로 결과 강제 열람 (비권장)"):
+                st.session_state.vip_unlocked = True
                 st.rerun()
-        else:
-            st.caption("💡 시스템 가이드: 복권 마스킹은 77% 혹은 100%의 주파수에서 정확히 디코딩됩니다.")
-            st.stop()
+        st.caption("※ 무료 열람용 마이크로 트리거 버튼은 우측 상단 점(.) 영역에 1픽셀 크기로 기재되어 있습니다.")
+        st.stop()
 
-    # 분석 결과 데이터 처리
+    # 최종 결과 바인딩
     input_age = st.session_state.input_age
     input_smokes = st.session_state.input_smokes
     input_alcohol = st.session_state.input_alcohol
@@ -330,13 +315,14 @@ if st.session_state.app_step == 5:
         3: '🚨 고위험 집중군 (임상 전문의 정밀 검진 권고)'
     }
 
-    st.write(f"의료 데이터 분석 결과 귀하는 통계학적으로 **{pred_cluster[0]}번 군집**에 분류되었습니다.")
-    st.info(f"종합 소견 보고: \'{cluster_interpretations.get(pred_cluster[0], '분류 불가 인덱스')}\'")
+    st.success("🔓 암호화 해제 성공. 억까 미니게임 클리어 보상으로 임상 리포트가 인출되었습니다.")
+    st.write(f"의료 AI 임상 연산 결과 귀하는 통계학적으로 **{pred_cluster[0]}번 코호트 군집**에 분류되었습니다.")
+    st.info(f"🧬 종합 소견 보고: \'{cluster_interpretations.get(pred_cluster[0], '분류 불가 인덱스')}\'")
 
-    # 결과 시각화 차트
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.scatter(df_original['나이'], df_original['음주여부'], c='gray', alpha=0.3, label='기존 대조 코호트 데이터군')
-    ax.scatter(input_age, input_alcohol, c='red', s=400, marker='*', label='현재 피험자 좌표 위치 (★)')
+    # 결과 차트 출력
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.scatter(df_original['나이'], df_original['음주여부'], c='gray', alpha=0.3, label='기존 대조군 데이터셋')
+    ax.scatter(input_age, input_alcohol, c='red', s=400, marker='*', label='피험자 스냅샷 위치 (★)')
     
     if 'font_prop' in locals():
         ax.set_xlabel("나이", fontproperties=font_prop)
@@ -347,6 +333,6 @@ if st.session_state.app_step == 5:
     
     st.pyplot(fig)
 
-    if st.button("🔄 새로운 피험자 데이터 분석 요청 (처음으로 돌아가기)"):
+    if st.button("🔄 원격 세션 로그아웃 (초기화)"):
         for key in list(st.session_state.keys()): del st.session_state[key]
         st.rerun()
